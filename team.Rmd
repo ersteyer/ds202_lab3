@@ -1,0 +1,145 @@
+---
+title: "Lab 3"
+author: "Eric Steyer"
+date: "3/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- readxl::read_xls('/Users/Eric Steyer/Documents/DS 202/GSS.xls')
+```
+
+```{r}
+data <- data[0:64814,]
+```
+
+```{r}
+names(data)[1] <- "year"
+names(data)[2] <- "happy"
+names(data)[3] <- "p_party"
+names(data)[4] <- "race"
+names(data)[5] <- "sex"
+names(data)[6] <- "yr_school"
+names(data)[7] <- "age"
+names(data)[8] <- "marital"
+names(data)[9] <- "id"
+names(data)[10] <- "ballot"
+```
+
+
+1.
+
+```{r}
+library(dplyr)
+data$yr_school <- as.numeric(data$yr_school)
+```
+```{r}
+marital_school <- data %>% group_by(marital) %>% summarise(mean_school = mean(yr_school, na.rm=TRUE)) %>% arrange(desc(mean_school))
+
+marital_school
+```
+
+Here we can see that the highest average years of school completed belongs to those people who didn't answer if they were married. Married people seem to be in the middle, along with divorced people. Widowed people have gone to school the shortest amount of time on average.
+
+2.
+
+```{r}
+No_answer <- data %>% filter(marital == "No answer") %>% filter(yr_school>15.47826)
+
+Nv_mar <- data %>% filter(marital == "Never married") %>% filter(yr_school>13.38954)
+
+divorced <- data %>% filter(marital == "Divorced") %>% filter(yr_school>13.10582)
+
+married <- data %>% filter(marital == "Married") %>% filter(yr_school>12.96828)
+
+separated <- data %>% filter(marital == "Separated") %>% filter(yr_school>11.85580)
+
+widowed <- data %>% filter(marital == "Widowed") %>% filter(yr_school>11.19825)
+
+above <- do.call("rbind", list(No_answer,Nv_mar,divorced,married,separated,widowed))
+
+str(above)
+```
+
+3.
+
+```{r}
+data$ishappy = data$happy == "Very happy" | data$happy=="Pretty happy"
+
+data$ishappy = as.numeric(data$ishappy)
+
+mar_happy = data %>% group_by(marital) %>% summarise(happypercent = mean(ishappy)) %>% arrange(desc(happypercent))
+
+mar_happy
+
+```
+```{r}
+library(ggplot2)
+ggplot(mar_happy, aes(x=marital, y=happypercent, fill=marital)) + geom_bar(stat="identity") + ggtitle("Happiness Percentage by Marriage Status") + coord_flip()
+```
+
+Here I created a new variable, "ishappy", which was 1 if they were "Very happy" or "Pretty happy", and 0 otherwise. I then used that to find the percentage of people who were happy for each marital status. We can see from the results that the "No answer" and "Separated" have the smallest percentage of happy people, and Married people have the highest percentage of happy people.
+
+
+
+4.
+
+```{r}
+data2 = data %>% group_by(marital, p_party) %>% summarise(happypercent = mean(ishappy)) %>% arrange(desc(happypercent))
+
+data2
+```
+
+```{r}
+ggplot(data2, aes(x=marital, y=happypercent, fill=marital)) + geom_bar(stat="identity") + facet_wrap(~p_party) + coord_flip() + ggtitle("Happiness Percent using Marital Status and Political Party")
+```
+
+In this problem, I grouped by marital status and political party. Married people still have the highest happiness percentages. It appears that "Other Party" and "Independent" political party individuals tend to have higher happiness percentages, but overall, the political parties don't really affect the distibutions of happiness based on marital status.
+
+
+
+5.
+
+```{r}
+marital_school
+```
+
+```{r}
+ggplot(data, aes(x=marital, y=yr_school, fill=marital)) + geom_boxplot() + coord_flip()
+```
+
+Using the marital status and the years of school variable, we see that the "No answer" responses to marital status has the higher years of education. Widows and separated people seem to have the lowest years of education. A possible reason for this could be that people that go to school for a long time don't want to reveal things about their private life, and maybe widows and separated people might drop out of school if they are still going to try to get a job.
+
+
+6.
+ 
+```{r}
+race_sex_happiness <- data %>% group_by(sex, race) %>% summarise(happypercent = mean(ishappy)) %>% arrange(desc(happypercent))
+
+race_sex_happiness
+```
+
+```{r}
+ggplot(race_sex_happiness, aes(x=race, y=happypercent)) + geom_bar(stat="identity") + facet_wrap(~sex)
+```
+
+A question I wanted to answer was, How do race and sex affect a person's happiness? I used the race, sex, and happiness variables. Here, we can see that White people seem to be the happiest, follwed by Other, then Black. There isn't much of a difference between the sexes, except for "Other" race, where Men seem to be slightly happier.
+
+
+
+```{r}
+race_sex_school <- data %>% group_by(sex, race) %>% summarise(mean_school = mean(yr_school, na.rm=TRUE)) %>% arrange(desc(mean_school))
+
+race_sex_school
+```
+
+```{r}
+ggplot(race_sex_school, aes(x=sex, y=mean_school, fill = sex)) + geom_bar(stat="identity") + facet_wrap(~race)
+```
+
+Then, I wanted to look at, How does race and sex affect the years of education for a person? I used the race, sex, and yr_school variables. Here, I found that White people had the most years in school, followed by Other, then Black. This follows the pattern for happiness. For White people and Other, males tend to go to school for a little longer, while for Black people, females tend to go for a little longer.
+
